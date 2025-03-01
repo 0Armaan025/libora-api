@@ -1,0 +1,34 @@
+const scrapeRoute = require("./routes/scrape/scrape_route");
+
+const express = require("express");
+
+
+
+const app = express();
+const PORT = 3000;
+
+// Middleware to parse JSON
+app.use(express.json());
+
+// Sample API route
+app.get("/", (req, res) => {
+    res.send("Welcome to My API!");
+});
+
+app.use("/api/scrape", scrapeRoute);
+
+// Sample GET route
+app.get("/api/data", (req, res) => {
+    res.json({ message: "Hello from the API!" });
+});
+
+// Sample POST route
+app.post("/api/data", (req, res) => {
+    const { name } = req.body;
+    res.json({ message: `Hello, ${name}!` });
+});
+
+// Start the server
+app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+});
