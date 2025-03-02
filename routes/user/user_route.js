@@ -64,14 +64,14 @@ router.post("/login", async (req, res) => {
 router.patch("/update-user", async (req, res) => {
     try {
         await connectToDB();
-        const { uid, updates } = req.body;
+        const { name , updates } = req.body;
 
-        if (!uid || !updates || typeof updates !== "object") {
+        if (!name || !updates || typeof updates !== "object") {
             return res.status(400).json({ message: "UID and valid updates are required" });
         }
 
         const updatedUser = await User.findOneAndUpdate(
-            { uid },
+            { name },
             { $set: updates },
             { new: true }
         );
