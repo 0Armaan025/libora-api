@@ -58,8 +58,12 @@ const downloadFile = async (fileUrl, fileName) => {
 router.get("/", async (req, res) => {
     const { name } = req.query;
 
+    if (!name) {
+        return res.status(400).json({ message: "Book name is required" });
+    }
+
     try {
-        const searchURL = `https://libgen.li/index.php?req=${name}&columns%5B%5D=t&columns%5B%5D=a&columns%5B%5D=s&columns%5B%5D=y&columns%5B%5D=p&columns%5B%5D=i&objects%5B%5D=f&objects%5B%5D=e&objects%5B%5D=s&objects%5B%5D=a&objects%5B%5D=p&objects%5B%5D=w&topics%5B%5D=l&topics%5B%5D=c&topics%5B%5D=f&topics%5B%5D=a&topics%5B%5D=m&topics%5B%5D=r&topics%5B%5D=s&res=50&filesuns=all`;
+        const searchURL = `https://libgen.li/index.php?req=${encodeURIComponent(name)}&columns%5B%5D=t&columns%5B%5D=a&columns%5B%5D=s&columns%5B%5D=y&columns%5B%5D=p&columns%5B%5D=i&objects%5B%5D=f&objects%5B%5D=e&objects%5B%5D=s&objects%5B%5D=a&objects%5B%5D=p&objects%5B%5D=w&topics%5B%5D=l&topics%5B%5D=c&topics%5B%5D=f&topics%5B%5D=a&topics%5B%5D=m&topics%5B%5D=r&topics%5B%5D=s&res=50&filesuns=all`;
 
         const { data } = await axios.get(searchURL);
         const $ = cheerio.load(data);
@@ -71,7 +75,6 @@ router.get("/", async (req, res) => {
         }
 
         let bookResults = [];
-        let downloadFilePath = null;
 
         rows.each((index, row) => {
             const columns = $(row).find("td");
@@ -90,8 +93,6 @@ router.get("/", async (req, res) => {
             // Get the first mirror link that starts with "https://libgen.li"
             const libgenMirror = mirrorLinks.find((link) => link.startsWith("https://libgen.li"));
 
-            let downloadLink = null;
-
             const bookData = {
                 title: bookTitle,
                 author: $(columns[1]).text().trim(),
@@ -102,32 +103,95 @@ router.get("/", async (req, res) => {
                 format: $(columns[7]).text().trim(),
                 bookUrl: bookUrl.startsWith("http") ? bookUrl : `https://libgen.li/${bookUrl}`,
                 mirrors: mirrorLinks,
-                downloadLink,
+                libgenMirror,
+                index
             };
 
             bookResults.push(bookData);
-
-            // Download the book for the 2nd result only
-            if (index === 1 && libgenMirror) {
-                getDownloadLink(libgenMirror).then(async (link) => {
-                    if (link) {
-                        bookData.downloadLink = link;
-                        const fileExt = bookData.format.toLowerCase();
-                        const fileName = `${bookData.title.replace(/[^\w\s]/gi, "_")}.${fileExt}`;
-                        downloadFilePath = await downloadFile(link, fileName);
-                    }
-                });
-            }
         });
 
         return res.status(200).json({
             message: "Books fetched successfully",
             data: bookResults,
-            downloadPath: downloadFilePath || "Download link not found for the 2nd book",
         });
     } catch (error) {
         console.error("Error fetching data:", error);
-        return res.status(500).json({ message: "Error fetching data" });
+        return res.status(500).json({ message: "Error fetching data", error: error.message });
+    }
+});
+
+// Route to download a file using mirror link
+router.get("/download", async (req, res) => {
+    const { mirrorUrl, title, format } = req.query;
+
+    if (!mirrorUrl) {
+        return res.status(400).json({ message: "Mirror URL is required" });
+    }
+
+    try {
+        // Get the actual download link from the mirror page
+        const downloadUrl = await getDownloadLink(mirrorUrl);
+
+        if (!downloadUrl) {
+            return res.status(404).json({ message: "Download link not found" });
+        }
+
+        // Generate a filename
+        const fileName = `${title || "download"}.${format || "pdf"}`.replace(/[^a-zA-Z0-9.]/g, "_");
+
+        // Stream the file to the client
+        const response = await axios({
+            url: downloadUrl,
+            method: "GET",
+            responseType: "stream",
+        });
+
+        // Set appropriate headers
+        res.setHeader("Content-Type", response.headers["content-type"] || "application/octet-stream");
+        res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+
+        // Pipe the file data directly to the response
+        response.data.pipe(res);
+    } catch (error) {
+        console.error("Error downloading file:", error);
+        return res.status(500).json({ message: "Error downloading file", error: error.message });
+    }
+});
+
+// Route to download and save the file on the server
+router.get("/save-file", async (req, res) => {
+    const { mirrorUrl, title, format } = req.query;
+
+    if (!mirrorUrl) {
+        return res.status(400).json({ message: "Mirror URL is required" });
+    }
+
+    try {
+        // Get the actual download link
+        const downloadUrl = await getDownloadLink(mirrorUrl);
+
+        if (!downloadUrl) {
+            return res.status(404).json({ message: "Download link not found" });
+        }
+
+        // Generate a filename
+        const fileName = `${title || "download"}.${format || "pdf"}`.replace(/[^a-zA-Z0-9.]/g, "_");
+
+        // Download and save the file
+        const filePath = await downloadFile(downloadUrl, fileName);
+
+        if (!filePath) {
+            return res.status(500).json({ message: "Failed to save the file" });
+        }
+
+        return res.status(200).json({
+            message: "File downloaded successfully",
+            filePath,
+            fileName
+        });
+    } catch (error) {
+        console.error("Error saving file:", error);
+        return res.status(500).json({ message: "Error saving file", error: error.message });
     }
 });
 
