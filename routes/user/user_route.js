@@ -89,7 +89,7 @@ router.patch("/update-user", async (req, res) => {
 router.get("/get-user", async (req, res) => {
     try {
         await connectToDB();
-        const { name } = req.body;
+        const { name } = req.query;
 
         if (!name) return res.status(400).json({ message: "Name is required" });
 
@@ -107,7 +107,7 @@ router.get("/get-user", async (req, res) => {
 router.get("/search-users", async (req, res) => {
     try {
         await connectToDB();
-        const { query } = req.body;
+        const { query } = req.query;
 
         if (!query) return res.status(400).json({ message: "Search query is required" });
 
