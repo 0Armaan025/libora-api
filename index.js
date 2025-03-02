@@ -1,6 +1,7 @@
-const scrapeRoute = require("./routes/scrape/scrape_route");
-
+const dotenv = require("dotenv");
 const express = require("express");
+const scrapeRoute = require("./routes/scrape/scrape_route");
+const userRoute = require("./routes/user/user_route");
 
 
 
@@ -10,12 +11,15 @@ const PORT = 3000;
 // Middleware to parse JSON
 app.use(express.json());
 
+dotenv.config();
+
 // Sample API route
 app.get("/", (req, res) => {
     res.send("Welcome to My API!");
 });
 
 app.use("/api/scrape", scrapeRoute);
+app.use("/api/user", userRoute);
 
 // Sample GET route
 app.get("/api/data", (req, res) => {
