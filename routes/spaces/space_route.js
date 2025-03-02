@@ -119,7 +119,7 @@ router.post("/leave", async (req, res) => {
 });
 
 router.get("/get-people", async (req, res) => {
-    const { code } = req.body;
+    const { code } = req.query;
 
     if (!code) {
         return res.status(400).json({ message: "Code is required" });
@@ -167,7 +167,7 @@ router.post("/send-message", async (req, res) => {
 });
 
 router.get("/get-messages", async (req, res) => {
-    const { code } = req.body;
+    const { code } = req.query;
 
     if (!code) {
         return res.status(400).json({ message: "Code is required" });
