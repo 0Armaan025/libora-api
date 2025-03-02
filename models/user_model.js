@@ -16,6 +16,11 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
+    profileImage: {
+        type: String,
+        reqiured: false,
+        default: "https://cdn-icons-png.flaticon.com/128/149/149071.png",
+    },
     createdAt: {
         type: Date,
         default: Date.now,
