@@ -2,6 +2,7 @@ const dotenv = require("dotenv");
 const express = require("express");
 const scrapeRoute = require("./routes/scrape/scrape_route");
 const userRoute = require("./routes/user/user_route");
+const spaceRoute = require("./routes/spaces/space_route");
 
 
 
@@ -20,6 +21,7 @@ app.get("/", (req, res) => {
 
 app.use("/api/scrape", scrapeRoute);
 app.use("/api/user", userRoute);
+app.use("/api/space", spaceRoute);
 
 // Sample GET route
 app.get("/api/data", (req, res) => {

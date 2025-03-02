@@ -7,10 +7,7 @@ const path = require("path");
 const router = express.Router();
 
 // Ensure downloads folder exists
-const downloadsDir = path.join(__dirname, "downloads");
-if (!fs.existsSync(downloadsDir)) {
-    fs.mkdirSync(downloadsDir);
-}
+
 
 // Function to get the direct "GET" download link
 const getDownloadLink = async (mirrorUrl) => {
