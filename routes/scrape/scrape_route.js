@@ -62,7 +62,15 @@ router.get("/", async (req, res) => {
     try {
         const searchURL = `https://libgen.li/index.php?req=${encodeURIComponent(name)}&columns%5B%5D=t&columns%5B%5D=a&columns%5B%5D=s&columns%5B%5D=y&columns%5B%5D=p&columns%5B%5D=i&objects%5B%5D=f&objects%5B%5D=e&objects%5B%5D=s&objects%5B%5D=a&objects%5B%5D=p&objects%5B%5D=w&topics%5B%5D=l&topics%5B%5D=c&topics%5B%5D=f&topics%5B%5D=a&topics%5B%5D=m&topics%5B%5D=r&topics%5B%5D=s&res=50&filesuns=all`;
 
-        const { data } = await axios.get(searchURL);
+        const { data } = await axios.get(searchURL, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)', // Mimic a real browser
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.5',
+                'Referer': 'https://www.google.com/',
+                'Connection': 'keep-alive',
+            }
+        });
         const $ = cheerio.load(data);
 
         // Get the top 25 results
