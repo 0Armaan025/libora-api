@@ -1,16 +1,19 @@
 const dotenv = require("dotenv");
 const express = require("express");
+const cors = require('cors');
+
 const scrapeRoute = require("./routes/scrape/scrape_route");
 const userRoute = require("./routes/user/user_route");
 const spaceRoute = require("./routes/spaces/space_route");
 
 
-
 const app = express();
 const PORT = 5000;
 
+app.use(cors());
 // Middleware to parse JSON
 app.use(express.json());
+
 
 dotenv.config();
 
