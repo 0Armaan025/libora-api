@@ -55,7 +55,15 @@ const downloadFile = async (fileUrl, fileName) => {
     }
 };
 
-// Main route to scrape book data and download the 2nd result
+const headers = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Connection": "keep-alive",
+    "Cache-Control": "no-cache",
+    "Pragma": "no-cache",
+};
+
 router.get("/", async (req, res) => {
     const { name } = req.query;
 
@@ -66,7 +74,7 @@ router.get("/", async (req, res) => {
     const searchURL = `https://libgen.li/index.php?req=${encodeURIComponent(name)}&columns%5B%5D=t&columns%5B%5D=a&columns%5B%5D=s&columns%5B%5D=y&columns%5B%5D=p&columns%5B%5D=i&objects%5B%5D=f&objects%5B%5D=e&objects%5B%5D=s&objects%5B%5D=a&objects%5B%5D=p&objects%5B%5D=w&topics%5B%5D=l&topics%5B%5D=c&topics%5B%5D=f&topics%5B%5D=a&topics%5B%5D=m&topics%5B%5D=r&topics%5B%5D=s&res=50&filesuns=all`;
 
     try {
-        const html = await cloudscraper.get(searchURL);
+        const html = await cloudscraper.get({ url: searchURL, headers });
 
         // Extract book details from the HTML
         const bookResults = extractBooks(html);
@@ -84,7 +92,6 @@ router.get("/", async (req, res) => {
         return res.status(500).json({ message: "Error fetching data", error: error.message });
     }
 });
-
 // Function to extract book details from HTML
 function extractBooks(html) {
     const cheerio = require("cheerio");
