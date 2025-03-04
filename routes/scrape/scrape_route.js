@@ -67,11 +67,12 @@ router.get("/", async (req, res) => {
     let browser;
     try {
         browser = await puppeteer.launch({
-            headless: "new", // 'true' or 'new' to avoid detection
+            headless: "new",
+            executablePath: "/opt/render/.cache/puppeteer/chrome/linux-133.0.6943.141/chrome",
             args: [
                 "--no-sandbox",
                 "--disable-setuid-sandbox",
-                "--disable-blink-features=AutomationControlled", // Avoid detection
+                "--disable-blink-features=AutomationControlled",
                 "--disable-dev-shm-usage"
             ]
         });
