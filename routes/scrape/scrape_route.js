@@ -4,8 +4,9 @@ const cheerio = require("cheerio");
 const fs = require("fs");
 const path = require("path");
 
-const puppeteer = require("puppeteer");
+// const puppeteer = require("puppeteer");
 
+const cloudscraper = require("cloudscraper");
 
 const router = express.Router();
 
@@ -64,54 +65,11 @@ router.get("/", async (req, res) => {
 
     const searchURL = `https://libgen.li/index.php?req=${encodeURIComponent(name)}&columns%5B%5D=t&columns%5B%5D=a&columns%5B%5D=s&columns%5B%5D=y&columns%5B%5D=p&columns%5B%5D=i&objects%5B%5D=f&objects%5B%5D=e&objects%5B%5D=s&objects%5B%5D=a&objects%5B%5D=p&objects%5B%5D=w&topics%5B%5D=l&topics%5B%5D=c&topics%5B%5D=f&topics%5B%5D=a&topics%5B%5D=m&topics%5B%5D=r&topics%5B%5D=s&res=50&filesuns=all`;
 
-    let browser;
     try {
-        browser = await puppeteer.launch({
-            headless: "new",
-            executablePath: "/opt/render/.cache/puppeteer/chrome/linux-133.0.6943.141/chrome",
-            args: [
-                "--no-sandbox",
-                "--disable-setuid-sandbox",
-                "--disable-blink-features=AutomationControlled",
-                "--disable-dev-shm-usage"
-            ]
-        });
+        const html = await cloudscraper.get(searchURL);
 
-        const page = await browser.newPage();
-        await page.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
-        await page.goto(searchURL, { waitUntil: "networkidle2" });
-
-        // Extract data
-        const bookResults = await page.evaluate(() => {
-            const rows = Array.from(document.querySelectorAll("tbody tr"));
-            return rows.slice(0, 25).map((row, index) => {
-                const columns = row.querySelectorAll("td");
-
-                const titleAnchor = columns[0]?.querySelector("a");
-                const bookTitle = titleAnchor?.textContent.trim() || "Unknown";
-                const bookUrl = titleAnchor?.href || "#";
-
-                const mirrorLinks = Array.from(columns[columns.length - 1]?.querySelectorAll("a") || [])
-                    .map(link => link.href)
-                    .filter(link => link.startsWith("http"));
-
-                return {
-                    title: bookTitle,
-                    author: columns[1]?.textContent.trim() || "Unknown",
-                    publisher: columns[2]?.textContent.trim() || "Unknown",
-                    year: columns[3]?.textContent.trim() || "Unknown",
-                    language: columns[4]?.textContent.trim() || "Unknown",
-                    fileSize: columns[6]?.textContent.trim() || "Unknown",
-                    format: columns[7]?.textContent.trim() || "Unknown",
-                    bookUrl,
-                    mirrors: mirrorLinks,
-                    libgenMirror: mirrorLinks.find(link => link.startsWith("https://libgen.li")) || null,
-                    index
-                };
-            });
-        });
-
-        await browser.close();
+        // Extract book details from the HTML
+        const bookResults = extractBooks(html);
 
         if (!bookResults.length) {
             return res.status(404).json({ message: "No books found" });
@@ -122,13 +80,43 @@ router.get("/", async (req, res) => {
             data: bookResults,
         });
     } catch (error) {
-        if (browser) await browser.close();
         console.error("Error fetching data:", error);
         return res.status(500).json({ message: "Error fetching data", error: error.message });
     }
 });
 
+// Function to extract book details from HTML
+function extractBooks(html) {
+    const cheerio = require("cheerio");
+    const $ = cheerio.load(html);
+    const books = [];
 
+    $("tbody tr").each((index, row) => {
+        const columns = $(row).find("td");
+
+        const titleAnchor = columns.eq(0).find("a");
+        const bookTitle = titleAnchor.text().trim() || "Unknown";
+        const bookUrl = titleAnchor.attr("href") || "#";
+
+        const mirrorLinks = columns.last().find("a").map((i, el) => $(el).attr("href")).get();
+
+        books.push({
+            title: bookTitle,
+            author: columns.eq(1).text().trim() || "Unknown",
+            publisher: columns.eq(2).text().trim() || "Unknown",
+            year: columns.eq(3).text().trim() || "Unknown",
+            language: columns.eq(4).text().trim() || "Unknown",
+            fileSize: columns.eq(6).text().trim() || "Unknown",
+            format: columns.eq(7).text().trim() || "Unknown",
+            bookUrl,
+            mirrors: mirrorLinks,
+            libgenMirror: mirrorLinks.find(link => link.startsWith("https://libgen.li")) || null,
+            index,
+        });
+    });
+
+    return books;
+}
 // Route to download a file using mirror link
 router.get("/download", async (req, res) => {
     const { mirrorUrl, title, format } = req.query;
