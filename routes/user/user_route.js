@@ -30,13 +30,13 @@ router.get("/", async (req, res) => {
 router.post("/register", async (req, res) => {
     try {
         await connectToDB();
-        const { name, pass } = req.body;
+        const { name, pass , profileImage } = req.body;
 
-        if (!name || !pass) return res.status(400).json({ message: "Name and pass are required" });
+        if (!name || !pass || !profileImage) return res.status(400).json({ message: "Name , pass and profileImage are required" });
 
         if (await User.findOne({ name })) return res.status(400).json({ message: "User already exists" });
 
-        const user = await new User({ name, password: pass }).save();
+        const user = await new User({ name, password: pass , profileImage}).save();
         res.status(200).json({ message: "User created successfully!", status: 200, user });
     } catch (e) {
         res.status(500).json({ message: "Some error occurred, please contact Armaan", status: 500, error: e.message });
