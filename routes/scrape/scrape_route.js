@@ -107,6 +107,11 @@ function extractBooks(html) {
 
         const mirrorLinks = columns.last().find("a").map((i, el) => $(el).attr("href")).get();
 
+        // Fix the first mirror link if it starts with "/"
+        if (mirrorLinks.length > 0 && mirrorLinks[0].startsWith("/")) {
+            mirrorLinks[0] = `https://libgen.li${mirrorLinks[0]}`;
+        }
+
         books.push({
             title: bookTitle,
             author: columns.eq(1).text().trim() || "Unknown",
@@ -124,6 +129,7 @@ function extractBooks(html) {
 
     return books;
 }
+
 // Route to download a file using mirror link
 router.get("/download", async (req, res) => {
     const { mirrorUrl, title, format } = req.query;
